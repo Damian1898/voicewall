@@ -1,0 +1,173 @@
+<script src="recorderControl.js"></script>
+<script src="js/jquery.min.2.1.js"></script> //Jquery
+<script src="js/jquery.stopwatch.js"></script> //Jquery Stop Watch
+<script src="recorder.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+
+	// Utility method that will give audio formatted time
+	getAudioTimeByDec = function(cTime,duration)
+	{
+	var duration = parseInt(duration),
+	currentTime = parseInt(cTime),
+	left = duration - currentTime, second, minute;
+	second = (left % 60);
+	minute = Math.floor(left / 60) % 60;
+	second = second < 10 ? "0"+second : second;
+	minute = minute < 10 ? "0"+minute : minute;
+	return minute+":"+second;
+	};
+
+	// Custom Audio Control using Jquery
+	$("body").on("click",".audioControl", function(e)
+	{
+	var ID=$(this).attr("id");
+	var progressArea = $("#audioProgress"+ID);
+	var audioTimer = $("#audioTime"+ID);
+	var audio = $("#audio"+ID);
+	var audioCtrl = $(this);
+	e.preventDefault();
+	var R=$(this).attr('rel');
+	if(R=='play')
+	{
+	$(this).removeClass('audioPlay').addClass('audioPause').attr("rel","pause");
+	audio.trigger('play');
+	}
+	else
+	{
+	$(this).removeClass('audioPause').addClass('audioPlay').attr("rel","play");
+	audio.trigger('pause');
+	}
+
+	// Audio Event listener, its listens audio time update events and updates Progress area and Timer area
+	audio.bind("timeupdate", function(e)
+	{
+	var audioDOM = audio.get(0);
+	audioTimer.text(getAudioTimeByDec(audioDOM.currentTime,audioDOM.duration));
+	var audioPos = (audioDOM.currentTime / audioDOM.duration) * 100;
+	progressArea.css('width',audioPos+"%");
+	if(audioPos=="100")
+	{
+	$("#"+ID).removeClass('audioPause').addClass('audioPlay').attr("rel","play");
+	audio.trigger('pause');
+	}
+	});
+	// Custom Audio Control End
+	});
+
+	$("body").on('click','.recordOn',function()
+	{ 
+	$("#recordContainer").toggle(); 
+	});
+	//Record Button
+	$("#recordCircle").mousedown(function()
+	{
+	$(this).removeClass('startRecord').addClass('stopRecord');
+	$("#recordContainer").removeClass('startContainer').addClass('stopContainer');
+	$("#recordText").html("Stop");
+	$.stopwatch.startTimer('sw'); // Stopwatch Start
+	startRecording(this); // Audio Recording Start
+	}).mouseup(function()
+	{
+	$.stopwatch.resetTimer(); // Stopwatch Reset
+	$(this).removeClass('stopRecord').addClass('startRecord');
+	$("#recordContainer").removeClass('stopContainer').addClass('startContainer');
+	$("#recordText").html("Record");
+	stopRecording(this); // Audio Recording Stop
+	});
+});
+
+function uploadAudioBase64(audiosrc)
+{
+var dataString ='audiosrc='+audiosrc;
+$.ajax({
+type: "POST",
+url: "uploadAudio.php",
+data: dataString,
+cache: false,
+success: function(html)
+{
+var ID = Number(new Date()); //Timestamp
+var A='<div class="audioContainer">'
++'<div class="audioProgress" id="audioProgress'+ID+'" style="width:0px"></div>'
++'<div class="audioControl audioPlay" rel="play" id="'+ID+'"></div>'
++'<div class="audioTime" id="audioTime'+ID+'">00.00</div>'
++'<div class="audioBar"></div>'
++'<audio preload="auto" src="'+audiosrc+'" type="audio/mpeg" class="a" id="audio'+ID+'"><source></audio>'
++'</div>';
+var B='<div class="stbody"><div class="stimg ">'
++'<a href="https://labs.9lessons.info/srinivas"><img src="http://www.gravatar.com/avatar/c9e85bd3f889cc998dd1bb71d832634b?d=mm&s=230" class="big_face " alt="You" ></a></div>'
++'<div class="sttext"><div class="sttext_content"><span class="sttext_span"><b><a href="https://labs.9lessons.info/srinivas">You</a></b> </span>'
++A
++'</div></div></div>';
+$(".recordingslist").prepend(B);
+}
+});
+}
+
+</script>
+
+<style type="text/css">
+	audio{display:none}
+	.audioContainer
+	{
+	height:50px;width:250px;
+	border:solid 1px #dedede;
+	position:relative;
+	}
+	.audioProgress
+	{
+	height:50px;float:left;background-color:#f2f2f2;z-index:800
+	}
+	.audioControl
+	{
+	position: absolute;float:left;width:52px;height:48px;;
+	}
+	.audioTime
+	{
+	position: absolute;width: 45px;height: 20px;margin-left:199px;float:right;
+	}
+	.audioBar
+	{
+	height: 3px;
+	background-color: #cc0000;
+	position: absolute;width: 147px;margin-left: 53px;
+	}
+	.audioPlay
+	{
+	background:url('../images/play.png') no-repeat
+	} 
+	.audioPause
+	{
+	background:url('../images/pause.png') no-repeat
+	}
+
+	#recordCircle 
+{
+margin: 0px auto;
+font-weight: bold;
+cursor: pointer;
+width: 100px;
+height: 100px;
+text-align: center;
+-moz-border-radius: 50px;
+-webkit-border-radius: 50px;
+border-radius: 50px;
+}
+
+</style>
+
+<div class="audioContainer">
+<div class="audioProgress" id="audioProgress10'" style="width:0px"></div>
+<div class="audioControl audioPlay" rel="play" id="10"></div>
+<div class="audioTime" id="audioTime10'">00.00</div>
+<div class="audioBar"></div>
+<audio preload="auto" src="data:audio/mp3;base64,//sUxAAABAArMFRhgA.." type="audio/mpeg" class="a" id="audio10'"><source></audio>
+</div>
+
+<img src="images/Microphone.png" id="recordButton" class="recordOff">
+<span id="recordHelp">Allow your microphone.</span>
+<div id="recordContainer" class="startContainer">
+<div id="recordTime"> <span id="sw_m">00</span>:<span id="sw_s">00</span></div>
+<div id="recordCircle" class="startRecord"><div id="recordText">Record</div></div>
+</div>
